@@ -1,0 +1,121 @@
+<h2 class="sr-only">Interactive US regional opportunity scorecard — select a month to see which regions score highest for AI automation outreach</h2>
+<style>
+.sp{display:inline-flex;align-items:center;justify-content:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;min-width:42px}
+.sh{background:#EAF3DE;color:#27500A}.sm{background:#FAEEDA;color:#633806}.sl{background:#F1EFE8;color:#5F5E5A}
+#rt th{font-size:12px;font-weight:500;color:var(--color-text-secondary);padding:8px 10px;text-align:left;border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap;cursor:pointer;user-select:none}
+#rt th:hover{color:var(--color-text-primary)}
+#rt td{font-size:13px;padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+#rt td.tc{text-align:center}
+#rt tbody tr{cursor:pointer;transition:background .12s}
+#rt tbody tr:hover td{background:var(--color-background-secondary)}
+.mb{display:inline-block;width:44px;height:5px;border-radius:3px;background:var(--color-background-secondary);vertical-align:middle;margin-right:5px}
+.mf{height:5px;border-radius:3px;background:#1D9E75}
+</style>
+
+<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+  <div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">Month</div>
+    <select id="msel" style="font-size:13px;padding:5px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary)">
+      <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+      <option value="3" selected>April</option><option value="4">May</option><option value="5">June</option>
+      <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+      <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+    </select>
+  </div>
+  <div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">Sort by</div>
+    <select id="ssel" style="font-size:13px;padding:5px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary)">
+      <option value="total">Total score</option>
+      <option value="seasonal">Seasonal signal</option>
+      <option value="economic">Economic signal</option>
+      <option value="industry">Industry fit</option>
+    </select>
+  </div>
+  <div style="margin-left:auto;font-size:11px;color:var(--color-text-tertiary);align-self:center;text-align:right;line-height:1.5">
+    Weights: seasonal 25% · economic 25% · news 20% · industry 30%<br>Click a row to build an outreach strategy
+  </div>
+</div>
+
+<div style="overflow-x:auto">
+  <table id="rt" style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr>
+        <th onclick="setSortCol('name')">Region</th>
+        <th onclick="setSortCol('seasonal')">Seasonal</th>
+        <th onclick="setSortCol('economic')">Economic</th>
+        <th onclick="setSortCol('news')">News</th>
+        <th onclick="setSortCol('industry')">Industry fit</th>
+        <th onclick="setSortCol('total')">Score</th>
+        <th>Trigger this month</th>
+      </tr>
+    </thead>
+    <tbody id="rtb"></tbody>
+  </table>
+</div>
+
+<div style="margin-top:10px;font-size:11px;color:var(--color-text-tertiary)">
+  Illustrative model · In production, seasonal pulls from NOAA, economic from BLS/FRED, news from RSS classifiers, industry from job posting APIs
+</div>
+
+<script>
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const regions=[
+  {id:'sct',name:'S. Central',states:'TX · LA · OK',
+   seasonal:[55,55,60,66,76,88,92,92,86,72,60,55],economic:76,news:80,industry:84,
+   triggers:['Energy Q1 pipeline','Pre-spring ops','Severe storm season','Hail & storm prep','Heat ramp + storms','Hurricane + heat peak','Peak heat & storm','Peak storm risk','Post-storm recovery','Fall energy prep','Pre-winter systems','Year-end pipeline']},
+  {id:'seu',name:'Southeast',states:'FL · GA · NC · SC',
+   seasonal:[50,50,55,60,72,84,90,90,85,72,58,50],economic:74,news:76,industry:80,
+   triggers:['Off-peak build start','Pre-spring prep','Spring construction','Storm prep season','Early hurricane watch','Hurricane season opens','Peak hurricane risk','Peak hurricane risk','Late hurricane season','Post-storm recovery','Post-season build','Year-end ops']},
+  {id:'mda',name:'Mid-Atlantic',states:'NY · NJ · PA · MD',
+   seasonal:[65,70,75,80,68,60,58,60,65,68,65,62],economic:82,news:84,industry:80,
+   triggers:['Q1 budget cycles','Pre-spring planning','Spring build start','Tax season close','Post-tax slow build','Summer ops scale','Summer slowdown','Pre-fall planning','Back-to-business','Q3 close push','Q4 pipeline build','Year-end push']},
+  {id:'pac',name:'Pacific Coast',states:'CA · OR · WA',
+   seasonal:[55,55,58,62,68,72,78,85,90,78,62,55],economic:78,news:72,industry:82,
+   triggers:['Storm recovery ops','Pre-spring pipeline','Spring build season','Tech budget cycles','Wildfire risk rising','Fire season prep','Peak fire & drought','Peak fire season','Post-fire recovery','Logistics ramp-up','Rainy season prep','Holiday logistics']},
+  {id:'swt',name:'Southwest',states:'AZ · NV · NM · UT',
+   seasonal:[60,62,68,74,80,82,75,72,75,72,65,60],economic:66,news:62,industry:72,
+   triggers:['Winter tourism peak','Spring construction','Pre-summer buildout','Heat season prep','Extreme heat build','Monsoon + heat','Monsoon season','Peak heat recovery','Post-monsoon ops','Fall build window','Migration season','Holiday season']},
+  {id:'glk',name:'Great Lakes',states:'MI · OH · IL · WI',
+   seasonal:[82,80,68,55,46,40,38,40,48,58,72,82],economic:67,news:62,industry:74,
+   triggers:['HVAC winter peak','Pre-spring sales','Thaw damage repair','Spring remodel wave','Construction season','Outdoor ops peak','Summer services','Late-summer build','Back-to-school ops','Fall prep window','Winterization wave','Holiday ops']},
+  {id:'nen',name:'New England',states:'MA · CT · ME · VT',
+   seasonal:[84,82,72,60,50,44,40,44,65,72,76,82],economic:70,news:66,industry:68,
+   triggers:['Winter recovery ops','Late-winter systems','Thaw & spring prep','Spring build start','Foliage prep','Summer tourism ops','Peak summer','Pre-fall systems','Back-to-school wave','Peak foliage ops','Winterization peak','Storm prep & holiday']},
+  {id:'npl',name:'N. Plains',states:'MN · IA · NE · ND',
+   seasonal:[82,78,65,52,44,38,36,40,50,60,74,84],economic:52,news:45,industry:58,
+   triggers:['Deep freeze ops','Winter pipeline','Spring thaw prep','Planting season','Agriculture ramp','Crop management','Mid-summer peak','Pre-harvest build','Harvest logistics','Fall storage ops','Pre-freeze prep','Winter storm ops']},
+  {id:'mtn',name:'Mountain West',states:'CO · MT · ID · WY',
+   seasonal:[72,68,62,58,52,50,55,58,60,65,70,74],economic:60,news:55,industry:65,
+   triggers:['Ski & resort systems','Winter closeout','Spring melt prep','Construction opening','Outdoor season start','Tourism peak build','Fire & drought','Heat & drought','Fall harvest prep','Fall tourism ops','Pre-ski prep','Ski season opens']}
+];
+
+let sortCol='total';
+const W={seasonal:.25,economic:.25,news:.20,industry:.30};
+
+function sc(r,m){return Math.round(r.seasonal[m]*W.seasonal+r.economic*W.economic+r.news*W.news+r.industry*W.industry)}
+function pill(v){const c=v>=75?'sh':v>=60?'sm':'sl';return`<span class="sp ${c}">${v}</span>`}
+function bar(v){return`<span class="mb"><span class="mf" style="width:${v}%"></span></span>${v}`}
+
+function render(){
+  const m=+document.getElementById('msel').value;
+  const s=document.getElementById('ssel').value||sortCol;
+  const rows=regions.map(r=>({...r,total:sc(r,m),trigger:r.triggers[m],_s:r.seasonal[m]}));
+  const key=s==='seasonal'?'_s':s==='total'?'total':s;
+  rows.sort((a,b)=>b[key]-a[key]);
+  document.getElementById('rtb').innerHTML=rows.map((r,i)=>`
+    <tr onclick="sendPrompt('Build the outreach campaign strategy for the ${r.name} region (${r.states}) in ${MONTHS[m]}. The opportunity trigger is: ${r.trigger}. Total score: ${r.total}/100. Industry fit: ${r.industry}. What industries to target, what pain point angle to use, and what the first email subject line should be.')">
+      <td><div style="font-weight:500">${r.name}</div><div style="font-size:11px;color:var(--color-text-secondary)">${r.states}</div></td>
+      <td class="tc">${bar(r.seasonal[m])}</td>
+      <td class="tc">${r.economic}</td>
+      <td class="tc">${r.news}</td>
+      <td class="tc">${r.industry}</td>
+      <td class="tc">${pill(r.total)}</td>
+      <td style="font-size:12px;color:var(--color-text-secondary);max-width:160px">${r.trigger}</td>
+    </tr>`).join('');
+}
+
+function setSortCol(col){sortCol=col;document.getElementById('ssel').value=col==='name'?'total':col;render()}
+document.getElementById('msel').onchange=render;
+document.getElementById('ssel').onchange=()=>{sortCol=document.getElementById('ssel').value;render()};
+render();
+</script>

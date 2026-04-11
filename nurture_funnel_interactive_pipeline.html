@@ -1,0 +1,113 @@
+<h2 class="sr-only">Interactive nurture and close funnel — click each stage to see the automated actions, timing, and CRM updates that fire at that step</h2>
+<style>
+.stages{display:flex;flex-direction:column;gap:0}
+.stage{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);overflow:hidden;cursor:pointer;transition:border-color .15s}
+.stage+.stage{margin-top:8px}
+.stage.active{border-color:var(--color-border-secondary)}
+.stage-header{display:flex;align-items:center;gap:12px;padding:11px 14px}
+.stage-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.stage-name{font-size:13px;font-weight:500;color:var(--color-text-primary);flex:1}
+.stage-meta{font-size:11px;color:var(--color-text-tertiary)}
+.stage-body{padding:0 14px 14px;display:none;border-top:0.5px solid var(--color-border-tertiary)}
+.stage.active .stage-body{display:block}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.action-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.action-label{font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.action-val{font-size:12px;color:var(--color-text-primary);line-height:1.5}
+.crm-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--color-background-secondary);color:var(--color-text-secondary);margin:2px}
+.msg-preview{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px;margin-top:10px;font-size:12px;color:var(--color-text-secondary);line-height:1.6;font-style:italic}
+.msg-label{font-size:11px;color:var(--color-text-tertiary);margin-bottom:5px}
+.ask-btn{font-size:12px;padding:5px 12px;border-radius:var(--border-radius-md);margin-top:10px;cursor:pointer}
+.connector{display:flex;align-items:center;justify-content:center;height:14px;color:var(--color-text-tertiary);font-size:18px;line-height:1;margin:2px 0;user-select:none}
+</style>
+
+<div class="stages" id="stages"></div>
+
+<script>
+const stages=[
+  {
+    color:'#1D9E75',label:'Stage 1 — interested reply',meta:'Day 0 · triggered by outreach agent',
+    trigger:'Reply classified as "interested" by Haiku classifier in outreach agent',
+    auto_actions:['CEO agent notified immediately with full lead context','Lead record pulled into GoHighLevel pipeline at "Interested" stage','Calendly booking link email sent within 12 minutes of reply','LinkedIn connection request sent if not already connected'],
+    crm_tags:['status: interested','source: email_seq','score: inherited','owner: CEO_agent'],
+    msg:{label:'Auto-reply sent within 12 min',text:'"Hi [Name] — great to hear from you. I have a few slots open this week, here\'s a link to grab 15 minutes: [Calendly]. Looking forward to it. — [Sender]"'},
+    cost:'~$0.001 Haiku classification + Calendly free tier'
+  },
+  {
+    color:'#7F77DD',label:'Stage 2 — pre-call nurture',meta:'Day 0–3 · before the discovery call',
+    trigger:'Booking confirmed in Calendly → webhook fires → n8n sequence starts',
+    auto_actions:['Immediate booking confirmation email with agenda (2 sentences max)','24hr reminder email with a single relevant case study or insight','2hr reminder SMS via Twilio ($0.0075/message)','CEO agent generates call brief: 5 bullet points about the company pulled from lead record'],
+    crm_tags:['status: call_booked','call_date: set','brief: generated'],
+    msg:{label:'Call brief delivered to your inbox (example)',text:'"Gulf Coast Mechanical · Mike Torres · HVAC · Houston TX · Score 81\n— No CRM detected, using spreadsheets per job posting language\n— 400+ Google reviews = high volume ops\n— Pre-hurricane season window open (6 weeks)\n— Last funded: unknown, 12yr old business = stable\n— Likely objection: cost / ROI proof"'},
+    cost:'~$0.003 Sonnet brief generation + $0.0075 SMS'
+  },
+  {
+    color:'#378ADD',label:'Stage 3 — discovery call',meta:'Day 1–5 · human-led, AI-briefed',
+    trigger:'Call happens (human). Post-call: update outcome in GHL (1 click: Won / Follow-up / Not Now)',
+    auto_actions:['You take the call with AI-generated brief in hand','Single click outcome logging in GoHighLevel triggers next sequence','If using Fathom or Fireflies: call transcript + AI summary auto-attached to CRM record','Outcome selection fires correct downstream sequence immediately'],
+    crm_tags:['call_outcome: [won|followup|notnow]','transcript: attached','next_action: auto_queued'],
+    msg:{label:'Post-call CRM note auto-generated (Fathom)',text:'"Call summary: 18 min. Pain confirmed: manual scheduling, ~20 calls/day handled by 1 admin. Budget: open to $500–800/mo if ROI proven. Decision maker: Mike (owner). Next step: proposal by Thursday. Objection raised: had a bad experience with an agency 2 years ago."'},
+    cost:'Fathom: free tier available · GHL: $97/mo full platform'
+  },
+  {
+    color:'#D85A30',label:'Stage 4a — post-call follow-up',meta:'Days 5–21 · for deals needing a proposal',
+    trigger:'Outcome logged as "Follow-up needed" → 4-touch post-call sequence fires',
+    auto_actions:['Day 1: Proposal email (Sonnet generates custom ROI calc from call notes)','Day 4: Value-add email — one relevant insight or short video, no ask','Day 8: Soft urgency — "wanted to check if you had a chance to review"','Day 14: Escalation — CEO agent flags for personal follow-up if no response','Day 21: Final breakup email — last touchpoint before moving to re-engagement'],
+    crm_tags:['status: proposal_sent','proposal_value: $X','sequence: post_call_4touch'],
+    msg:{label:'Day 1 proposal email opener (Sonnet-generated)',text:'"Hi Mike — as promised, here\'s what the system looks like for a company your size running ~20 inbound calls/day. Based on what you told me, the ROI math is straightforward: if it captures 3 more jobs per week at your average ticket, it pays for itself in the first month. Full breakdown below."'},
+    cost:'~$0.008 Sonnet proposal draft · sequence via GHL automation'
+  },
+  {
+    color:'#BA7517',label:'Stage 4b — not now re-engagement',meta:'Days 30–180 · slow drip, score-triggered re-activation',
+    trigger:'Outcome logged as "Not now" → enters 90-day passive sequence + re-score monitor',
+    auto_actions:['Monthly single-touch email — pure value, zero pitch (industry tip, local news, relevant stat)','Re-score trigger: if regional opportunity score spikes 15+ points → immediate re-activation','Job posting monitor: if company posts new ops/admin role → re-activation with tailored hook','Day 90: Re-introduction email referencing original conversation'],
+    crm_tags:['status: not_now','reactivation_triggers: set','drip: monthly_value'],
+    msg:{label:'Month 2 value drip (example)',text:'"Hi Mike — not pitching anything. Just saw that hurricane season is being forecast as above-average this year for the Gulf Coast. Thought it might be useful: [link to NOAA prep resource]. Hope the season treats Gulf Coast Mechanical well. — [Name]"'},
+    cost:'~$0.001 Haiku drafts · zero pressure · high long-term conversion'
+  },
+  {
+    color:'#639922',label:'Stage 5 — closed won',meta:'Day varies · contract signed → onboarding fires',
+    trigger:'Deal marked Won in GHL → webhook triggers full onboarding sequence',
+    auto_actions:['Contract sent via PandaDoc API (auto-populated from CRM fields)','Welcome email sequence: Day 0 intro, Day 1 setup guide, Day 3 check-in','Slack notification to your team (or just you) with deal value + client context','Client added to monthly reporting sequence — automated ROI summary sent to them every 30 days'],
+    crm_tags:['status: won','mrr: $X','onboarding: active','reporting: monthly'],
+    msg:{label:'Day 0 welcome email',text:'"Welcome to the team, Mike. Here\'s what happens in the next 72 hours: [3 bullet setup steps]. You\'ll hear from me directly on Day 3 to make sure everything is running. The goal for your first 30 days: capture at least 3 jobs you would have missed. We track that together."'},
+    cost:'PandaDoc: $35/mo · full onboarding automated · ~15 min human time total'
+  }
+];
+
+let active=0;
+function render(){
+  document.getElementById('stages').innerHTML=stages.map((s,i)=>`
+    <div>
+    <div class="stage${i===active?' active':''}" onclick="setActive(${i})">
+      <div class="stage-header">
+        <div class="stage-dot" style="background:${s.color}"></div>
+        <div class="stage-name">${s.label}</div>
+        <div class="stage-meta">${s.meta}</div>
+        <div style="font-size:16px;color:var(--color-text-tertiary);margin-left:4px">${i===active?'▾':'▸'}</div>
+      </div>
+      <div class="stage-body">
+        <div style="font-size:12px;color:var(--color-text-secondary);margin-top:10px;margin-bottom:8px"><strong style="color:var(--color-text-primary)">Trigger:</strong> ${s.trigger}</div>
+        <div class="action-grid">
+          <div class="action-card">
+            <div class="action-label">Automated actions</div>
+            <div class="action-val">${s.auto_actions.map(a=>`<div style="margin-bottom:4px;padding-left:8px;border-left:2px solid var(--color-border-secondary)">${a}</div>`).join('')}</div>
+          </div>
+          <div class="action-card">
+            <div class="action-label">CRM tags written</div>
+            <div class="action-val" style="margin-bottom:8px">${s.crm_tags.map(t=>`<span class="crm-tag">${t}</span>`).join('')}</div>
+            <div class="action-label" style="margin-top:8px">Cost at this stage</div>
+            <div class="action-val">${s.cost}</div>
+          </div>
+        </div>
+        <div class="msg-preview"><div class="msg-label">${s.msg.label}</div>${s.msg.text}</div>
+        <button class="ask-btn" onclick="sendPrompt('Go deeper on Stage ${i+1}: ${s.label}. Show me the exact n8n workflow nodes, the GHL pipeline configuration, and the full message copy for every touchpoint in this stage.')">Go deeper on this stage ↗</button>
+      </div>
+    </div>
+    ${i<stages.length-1?'<div class="connector">↓</div>':''}
+    </div>
+  `).join('');
+}
+function setActive(i){active=i===active?-1:i;render()}
+render();
+</script>

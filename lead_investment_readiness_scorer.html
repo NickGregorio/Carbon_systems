@@ -1,0 +1,103 @@
+<h2 class="sr-only">Interactive lead investment readiness scorer — adjust signals to calculate a business's likelihood to invest in AI automation</h2>
+<style>
+.sc{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.sf{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
+.sl{font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;display:flex;justify-content:space-between}
+.sv{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.tier{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:99px;font-size:13px;font-weight:500}
+.hot{background:#EAF3DE;color:#27500A}
+.warm{background:#FAEEDA;color:#633806}
+.cold{background:#F1EFE8;color:#5F5E5A}
+.bar-track{height:6px;background:var(--color-background-secondary);border-radius:3px;margin-top:4px;overflow:hidden}
+.bar-fill{height:6px;border-radius:3px;transition:width .3s ease}
+.sig-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sig-label{font-size:12px;color:var(--color-text-secondary);width:160px;flex-shrink:0}
+.sig-val{font-size:12px;font-weight:500;color:var(--color-text-primary);width:28px;text-align:right;flex-shrink:0}
+input[type=range]{flex:1}
+</style>
+
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+  <div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">Industry vertical</div>
+    <select id="ind" style="font-size:13px;padding:5px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary)" onchange="recalc()">
+      <option value="92">HVAC / Mechanical</option>
+      <option value="88">Roofing / Restoration</option>
+      <option value="84">Insurance (regional)</option>
+      <option value="80">Logistics / Freight</option>
+      <option value="76">Real estate / Property mgmt</option>
+      <option value="72">Healthcare admin</option>
+      <option value="65">Construction / Trades</option>
+      <option value="58">Retail / Hospitality</option>
+      <option value="48">Legal / Professional svcs</option>
+    </select>
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px">Investment readiness score</div>
+    <div style="display:flex;align-items:baseline;gap:8px;justify-content:flex-end">
+      <span id="total-score" style="font-size:32px;font-weight:500;color:var(--color-text-primary)">--</span>
+      <span style="font-size:14px;color:var(--color-text-secondary)">/100</span>
+      <span id="tier-badge" class="tier cold" style="margin-left:4px">--</span>
+    </div>
+  </div>
+</div>
+
+<div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">Operational pain signals (35%)</div>
+<div class="sig-row"><span class="sig-label">Manual / paper-based workflow</span><input type="range" id="s1" min="0" max="100" value="70" oninput="recalc()"><span class="sig-val" id="v1">70</span></div>
+<div class="sig-row"><span class="sig-label">No CRM or weak CRM detected</span><input type="range" id="s2" min="0" max="100" value="60" oninput="recalc()"><span class="sig-val" id="v2">60</span></div>
+<div class="sig-row"><span class="sig-label">High call volume / missed leads</span><input type="range" id="s3" min="0" max="100" value="80" oninput="recalc()"><span class="sig-val" id="v3">80</span></div>
+
+<div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.04em">Financial readiness signals (30%)</div>
+<div class="sig-row"><span class="sig-label">Revenue $1M–$20M range</span><input type="range" id="s4" min="0" max="100" value="85" oninput="recalc()"><span class="sig-val" id="v4">85</span></div>
+<div class="sig-row"><span class="sig-label">YoY revenue growth signal</span><input type="range" id="s5" min="0" max="100" value="65" oninput="recalc()"><span class="sig-val" id="v5">65</span></div>
+<div class="sig-row"><span class="sig-label">Recent hiring (not just ops roles)</span><input type="range" id="s6" min="0" max="100" value="55" oninput="recalc()"><span class="sig-val" id="v6">55</span></div>
+
+<div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.04em">Timing signals (20%)</div>
+<div class="sig-row"><span class="sig-label">Regional opportunity score</span><input type="range" id="s7" min="0" max="100" value="78" oninput="recalc()"><span class="sig-val" id="v7">78</span></div>
+<div class="sig-row"><span class="sig-label">Seasonal peak approaching</span><input type="range" id="s8" min="0" max="100" value="85" oninput="recalc()"><span class="sig-val" id="v8">85</span></div>
+
+<div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.04em">Digital presence signals (15%)</div>
+<div class="sig-row"><span class="sig-label">Outdated website (pre-2018)</span><input type="range" id="s9" min="0" max="100" value="70" oninput="recalc()"><span class="sig-val" id="v9">70</span></div>
+<div class="sig-row"><span class="sig-label">No chatbot / booking widget</span><input type="range" id="s10" min="0" max="100" value="90" oninput="recalc()"><span class="sig-val" id="v10">90</span></div>
+
+<div style="margin-top:18px;padding:14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
+  <div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px">Score breakdown</div>
+  <div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span>Operational pain (35%)</span><span id="b1">--</span></div><div class="bar-track"><div class="bar-fill" id="br1" style="background:#1D9E75;width:0%"></div></div></div>
+  <div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span>Financial readiness (30%)</span><span id="b2">--</span></div><div class="bar-track"><div class="bar-fill" id="br2" style="background:#378ADD;width:0%"></div></div></div>
+  <div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span>Timing (20%)</span><span id="b3">--</span></div><div class="bar-track"><div class="bar-fill" id="br3" style="background:#7F77DD;width:0%"></div></div></div>
+  <div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);margin-bottom:3px"><span>Digital presence (15%)</span><span id="b4">--</span></div><div class="bar-track"><div class="bar-fill" id="br4" style="background:#D85A30;width:0%"></div></div></div>
+</div>
+
+<div id="pitch-box" style="margin-top:12px;padding:12px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);font-size:13px;color:var(--color-text-secondary);display:none"></div>
+
+<button id="outreach-btn" onclick="sendPrompt('Write me the first cold outreach email for a lead in this tier with these signals. Industry: ' + document.getElementById('ind').options[document.getElementById('ind').selectedIndex].text + '. Score: ' + document.getElementById('total-score').textContent + '/100. Key pain signals: manual workflow, no CRM, high missed leads, peak season approaching.')" style="margin-top:12px;font-size:13px;padding:7px 16px;border-radius:var(--border-radius-md)">Generate outreach email for this lead ↗</button>
+
+<script>
+function recalc(){
+  const ids=['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10'];
+  ids.forEach((id,i)=>{document.getElementById('v'+(i+1)).textContent=document.getElementById(id).value});
+  const v=ids.map(id=>+document.getElementById(id).value);
+  const indFit=+document.getElementById('ind').value;
+  const pain=Math.round((v[0]+v[1]+v[2])/3);
+  const fin=Math.round((v[3]+v[4]+v[5])/3);
+  const timing=Math.round((v[6]+v[7])/2);
+  const digital=Math.round((v[8]+v[9])/2);
+  const raw=pain*.35+fin*.30+timing*.20+digital*.15;
+  const total=Math.round(raw*.7+indFit*.3);
+  document.getElementById('b1').textContent=pain;
+  document.getElementById('b2').textContent=fin;
+  document.getElementById('b3').textContent=timing;
+  document.getElementById('b4').textContent=digital;
+  document.getElementById('br1').style.width=pain+'%';
+  document.getElementById('br2').style.width=fin+'%';
+  document.getElementById('br3').style.width=timing+'%';
+  document.getElementById('br4').style.width=digital+'%';
+  document.getElementById('total-score').textContent=total;
+  const badge=document.getElementById('tier-badge');
+  const pitch=document.getElementById('pitch-box');
+  pitch.style.display='block';
+  if(total>=72){badge.className='tier hot';badge.textContent='Hot lead';pitch.textContent='Recommendation: prioritize for immediate personalized outreach. CEO agent should review and approve within 24hrs. Target decision-maker directly (owner or ops director). Reference the specific seasonal trigger in subject line.'}
+  else if(total>=52){badge.className='tier warm';badge.textContent='Warm lead';pitch.textContent='Recommendation: enroll in 5-step automated nurture sequence. Monitor for score increase triggers (new job postings, website updates, news mentions). Revisit in 3 weeks for re-score.'}
+  else{badge.className='tier cold';badge.textContent='Cold lead';pitch.textContent='Recommendation: hold. Add to low-frequency newsletter list only. Set a re-score trigger for next regional opportunity spike or if company posts 3+ new jobs within 30 days.'}
+}
+recalc();
+</script>

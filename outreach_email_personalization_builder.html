@@ -1,0 +1,140 @@
+<h2 class="sr-only">Outreach email personalization builder — select lead signals to preview how the agent constructs a personalized cold email</h2>
+<style>
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.sel-group label{font-size:12px;color:var(--color-text-secondary);display:block;margin-bottom:4px}
+.sel-group select{width:100%;font-size:13px;padding:5px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary)}
+.email-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px 18px;margin-top:14px}
+.email-field{margin-bottom:10px;font-size:13px}
+.email-field .lbl{color:var(--color-text-tertiary);font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.email-field .val{color:var(--color-text-primary);line-height:1.6}
+.hl{background:#FAEEDA;color:#633806;border-radius:3px;padding:0 3px}
+.seq-step{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:8px;font-size:12px}
+.seq-day{font-size:11px;color:var(--color-text-tertiary);margin-bottom:3px}
+.seq-subj{font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.seq-desc{color:var(--color-text-secondary)}
+</style>
+
+<div class="row2">
+  <div class="sel-group">
+    <label>Industry</label>
+    <select id="ind" onchange="build()">
+      <option value="hvac">HVAC / Mechanical</option>
+      <option value="roof">Roofing / Restoration</option>
+      <option value="ins">Insurance (regional)</option>
+      <option value="log">Logistics / Freight</option>
+      <option value="re">Real estate / Property mgmt</option>
+    </select>
+  </div>
+  <div class="sel-group">
+    <label>Seasonal trigger</label>
+    <select id="trig" onchange="build()">
+      <option value="pre">Pre-season ramp (6 wks out)</option>
+      <option value="peak">Peak season now</option>
+      <option value="post">Post-event recovery</option>
+      <option value="q1">Q1 budget cycle open</option>
+    </select>
+  </div>
+</div>
+<div class="row2">
+  <div class="sel-group">
+    <label>Top pain signal detected</label>
+    <select id="pain" onchange="build()">
+      <option value="nocrm">No CRM / using spreadsheets</option>
+      <option value="calls">High call volume / missed leads</option>
+      <option value="sched">Manual scheduling / dispatch</option>
+      <option value="followup">No follow-up system</option>
+    </select>
+  </div>
+  <div class="sel-group">
+    <label>Digital maturity</label>
+    <select id="dig" onchange="build()">
+      <option value="low">Low — old site, no booking widget</option>
+      <option value="mid">Mid — basic site, simple form</option>
+      <option value="high">High — modern site, some automation</option>
+    </select>
+  </div>
+</div>
+<div class="row2">
+  <div class="sel-group">
+    <label>Company name (example)</label>
+    <select id="cname" onchange="build()">
+      <option value="Gulf Coast Mechanical">Gulf Coast Mechanical</option>
+      <option value="Apex Roofing Solutions">Apex Roofing Solutions</option>
+      <option value="Midland Insurance Group">Midland Insurance Group</option>
+      <option value="Precision Freight LLC">Precision Freight LLC</option>
+    </select>
+  </div>
+  <div class="sel-group">
+    <label>Decision-maker first name</label>
+    <select id="fname" onchange="build()">
+      <option value="Mike">Mike</option>
+      <option value="Sarah">Sarah</option>
+      <option value="James">James</option>
+      <option value="Lisa">Lisa</option>
+    </select>
+  </div>
+</div>
+
+<div class="email-card" id="email-preview"></div>
+
+<div style="margin-top:18px;font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">5-step sequence timing</div>
+<div id="seq-preview"></div>
+
+<button onclick="sendPrompt('Write all 5 emails in the full outreach sequence for an ' + document.getElementById('ind').options[document.getElementById('ind').selectedIndex].text + ' company. Pain signal: ' + document.getElementById('pain').options[document.getElementById('pain').selectedIndex].text + '. Seasonal trigger: ' + document.getElementById('trig').options[document.getElementById('trig').selectedIndex].text + '. Decision maker first name: ' + document.getElementById('fname').value + '. Company: ' + document.getElementById('cname').value + '. Include subject lines, full body, and the strategic logic for each step.')" style="margin-top:4px;font-size:13px;padding:7px 16px;border-radius:var(--border-radius-md)">Write full 5-email sequence ↗</button>
+
+<script>
+const data={
+  hvac:{noun:'HVAC company',pain_map:{nocrm:'still tracking service calls in a spreadsheet',calls:'missing inbound calls during peak load days',sched:'dispatching techs manually by phone',followup:'quotes going cold with no follow-up system'},product:'automated dispatch + follow-up pipeline',result:'book more service calls without adding office staff'},
+  roof:{noun:'roofing company',pain_map:{nocrm:'managing jobs in a spreadsheet or whiteboard',calls:'missing storm-surge calls when the phones flood',sched:'scheduling crews manually after each inspection',followup:'losing estimates to competitors who follow up faster'},product:'automated lead capture + estimate follow-up system',result:'close more storm jobs without a bigger office team'},
+  ins:{noun:'insurance agency',pain_map:{nocrm:'tracking renewals manually or in a basic spreadsheet',calls:'missing inbound quote requests after hours',sched:'scheduling policy reviews one call at a time',followup:'losing leads who requested quotes but never heard back'},product:'automated renewal + quote follow-up pipeline',result:'retain more clients and close more new policies'},
+  log:{noun:'freight company',pain_map:{nocrm:'tracking loads and clients across disconnected tools',calls:'missing shipper calls during high-volume windows',sched:'quoting and scheduling pickups manually',followup:'losing repeat business from shippers who go cold'},product:'automated load intake + client follow-up system',result:'capture more loads without scaling your ops team'},
+  re:{noun:'property management company',pain_map:{nocrm:'managing tenant leads and renewals in a spreadsheet',calls:'missing leasing inquiries outside office hours',sched:'scheduling showings and maintenance manually',followup:'losing rental prospects who inquire and never hear back'},product:'automated leasing + maintenance request pipeline',result:'fill vacancies faster without extra admin headcount'}
+};
+const trig_map={
+  pre:{hook:'heading into your busiest season',urgency:'The next 6 weeks are your setup window — what you systematize now determines how much you capture.'},
+  peak:{hook:'right in the middle of peak season',urgency:'You\'re in it now. Every missed call or slow follow-up is direct revenue walking to a competitor.'},
+  post:{hook:'coming out of a major demand spike',urgency:'Post-event is the best time to fix the system before the next wave hits.'},
+  q1:{hook:'at the start of a new budget cycle',urgency:'Q1 is when ops investments get approved. This is the window.'}
+};
+const dig_map={
+  low:'I noticed your site doesn\'t have an online booking option yet — most of your competitors in the region do now.',
+  mid:'Your site looks solid — the missing piece is usually what happens after someone fills out the contact form.',
+  high:'You\'ve clearly invested in your digital presence. The gap for most companies at your stage is the backend pipeline, not the front end.'
+};
+const seq_steps=[
+  {day:'Day 1',label:'Email 1 — the hook',desc:'Hyper-personalized first line + single specific pain point + one soft CTA (15-min call)'},
+  {day:'Day 4',label:'Email 2 — the proof',desc:'One concrete result (e.g. "similar HVAC company in Texas went from 30% to 78% lead capture rate") + re-ask'},
+  {day:'Day 9',label:'Email 3 — the resource',desc:'Useful content (short PDF, loom video, or case study) — value-first, no ask'},
+  {day:'Day 16',label:'LinkedIn connection',desc:'Connect request with a short personalized note referencing email 1 — multi-channel lift'},
+  {day:'Day 21',label:'Email 4 — the breakup',desc:'"Last email" frame — creates urgency, highest reply rate in the sequence, often 2–3x email 1'}
+];
+
+function build(){
+  const ind=document.getElementById('ind').value;
+  const trig=document.getElementById('trig').value;
+  const pain=document.getElementById('pain').value;
+  const dig=document.getElementById('dig').value;
+  const cname=document.getElementById('cname').value;
+  const fname=document.getElementById('fname').value;
+  const d=data[ind];
+  const t=trig_map[trig];
+  const painPhrase=d.pain_map[pain];
+  const digLine=dig_map[dig];
+  const subj=trig==='pre'?`Before your busy season hits, ${fname}`
+    :trig==='peak'?`Quick question about your peak season, ${fname}`
+    :trig==='post'?`While things calm down — quick thought, ${fname}`
+    :`One thing for Q1, ${fname}`;
+  const body=`Hi ${fname},\n\nSpotted that ${cname} is <span class="hl">${t.hook}</span> — congrats on the growth.\n\nQuick observation: a lot of <span class="hl">${d.noun}s</span> in your region are still <span class="hl">${painPhrase}</span>. <span class="hl">${t.urgency}</span>\n\n${digLine}\n\nWe build <span class="hl">${d.product}</span> specifically for companies like yours — the kind that <span class="hl">${d.result}</span>.\n\nWould a 15-minute call this week make sense? I can show you exactly what it looks like for a company your size.\n\n— [Your name]\nP.S. No deck, no pitch. Just a quick look at the system.`;
+  document.getElementById('email-preview').innerHTML=`
+    <div class="email-field"><div class="lbl">Subject line</div><div class="val" style="font-weight:500">${subj}</div></div>
+    <div class="email-field"><div class="lbl">Body</div><div class="val" style="white-space:pre-line">${body}</div></div>
+    <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--color-border-tertiary);font-size:11px;color:var(--color-text-tertiary)">Highlighted spans = dynamically injected from lead record · Generated by Claude Haiku (~$0.001/email)</div>`;
+  document.getElementById('seq-preview').innerHTML=seq_steps.map(s=>`
+    <div class="seq-step">
+      <div class="seq-day">${s.day}</div>
+      <div class="seq-subj">${s.label}</div>
+      <div class="seq-desc">${s.desc}</div>
+    </div>`).join('');
+}
+build();
+</script>
