@@ -45,7 +45,7 @@ GoHighLevel CRM · Instantly.ai email · Waalaxy LinkedIn
 │   │
 │   ├── lead_targeting/
 │   │   ├── maps_finder.py             # Google Maps API → candidate leads
-│   │   ├── apollo_enricher.py         # Apollo.io firmographics + contacts
+│   │   ├── hunter_enricher.py         # Hunter.io email enrichment + firmographics
 │   │   ├── job_scanner.py             # Indeed/LinkedIn job posting signals
 │   │   ├── website_scanner.py         # Tech stack + funnel gap detection
 │   │   └── scorer.py                  # Lead investment readiness score
@@ -98,7 +98,7 @@ SERPAPI_KEY=...                         # Google Trends (100 free/mo)
 GOOGLE_MAPS_API_KEY=...
 
 # Lead Targeting
-APOLLO_API_KEY=...
+HUNTER_API_KEY=...
 RAPIDAPI_KEY=...                        # Indeed job postings
 
 # Outreach
@@ -170,7 +170,7 @@ CREATE TABLE leads (
   google_rating     FLOAT,
   google_review_cnt INTEGER,
 
-  -- Apollo enrichment
+  -- Hunter enrichment
   contact_name      TEXT,
   contact_email     TEXT,
   contact_title     TEXT,
@@ -583,7 +583,7 @@ MODEL_ROUTING = {
 ```
 Phase 1 (Wks 1–2):  $0      — no external APIs yet
 Phase 2 (Wk 3):     $2      — NOAA/FRED/BLS (free tiers)
-Phase 3 (Wk 4):     $50     — Apollo credits added
+Phase 3 (Wk 4):     $0      — Hunter.io free tier
 Phase 4 (Wks 5–6):  $90     — Instantly.ai + Haiku personalization
 Phase 5 (Wk 7):     $130    — Waalaxy LinkedIn added
 Phase 6 (Wks 8–9):  $330    — GoHighLevel + Twilio + Sonnet calls
